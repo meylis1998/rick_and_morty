@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
@@ -27,14 +28,16 @@ class CharacterDetailPage extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: character.image,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  placeholder: (context, url) => ColoredBox(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  errorWidget: (context, url, error) => ColoredBox(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Icon(Icons.error_outline, size: 48),
                   ),
                 ),
@@ -43,7 +46,7 @@ class CharacterDetailPage extends StatelessWidget {
             actions: [
               IconButton(
                 icon: Icon(
-                  character.isFavorite ? Icons.favorite : Icons.favorite_border,
+                  character.isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
                   color: character.isFavorite ? Colors.red : null,
                 ),
                 onPressed: () {

@@ -21,10 +21,6 @@ dependencies:
   # Networking
   dartz: ^0.10.1
   dio: ^5.4.0
-  dio_cache_interceptor: ^3.5.0
-  dio_cache_interceptor_hive_store: ^4.0.0
-  # Database
-  drift: ^2.16.0
   # State Management
   equatable: ^2.0.5
   # Theme
@@ -32,6 +28,7 @@ dependencies:
   flutter_animate: ^4.5.0
   flutter_bloc: ^9.1.1
   flutter_cache_manager: ^3.3.1
+  hydrated_bloc: ^10.1.1
   # Dependency Injection
   get_it: ^9.1.1
   # Navigation
@@ -43,7 +40,6 @@ dependencies:
   path_provider: ^2.1.2
   retrofit: ^4.1.0
   shared_preferences: ^2.2.2
-  sqlite3_flutter_libs: ^0.5.20
 
 dev_dependencies:
   flutter_test:
@@ -53,7 +49,6 @@ dev_dependencies:
   bloc_test: ^10.0.0
   # Code Generation
   build_runner: ^2.4.8
-  drift_dev: ^2.16.0
   injectable_generator: ^2.4.2
   json_serializable: ^6.7.1
   # Testing

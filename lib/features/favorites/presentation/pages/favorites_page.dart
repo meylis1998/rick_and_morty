@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/presentation/widgets/empty_state_widget.dart';
@@ -28,8 +29,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
     final prefsService = context.read<PreferencesService>();
     final savedMode = prefsService.getViewMode();
     _viewMode = savedMode == 'list' ? ViewMode.list : ViewMode.grid;
-
-    context.read<FavoritesBloc>().add(const WatchFavorites());
   }
 
   void _onViewModeChanged(ViewMode mode) {
@@ -50,18 +49,83 @@ class _FavoritesPageState extends State<FavoritesPage> {
           BlocBuilder<FavoritesBloc, FavoritesState>(
             builder: (context, state) {
               if (state is FavoritesLoaded && state.favorites.isNotEmpty) {
-                return IconButton(
-                  icon: Icon(
-                    state.sortOrder == SortOrder.ascending
-                        ? Icons.sort_by_alpha
-                        : Icons.sort_by_alpha,
-                  ),
-                  tooltip: state.sortOrder == SortOrder.ascending
-                      ? 'Sort Z-A'
-                      : 'Sort A-Z',
-                  onPressed: () {
-                    context.read<FavoritesBloc>().add(const ToggleSortOrder());
-                  },
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Sort Field Selector
+                    PopupMenuButton<SortField>(
+                      icon: const Icon(Icons.filter_list),
+                      tooltip: 'Sort by',
+                      onSelected: (SortField field) {
+                        context
+                            .read<FavoritesBloc>()
+                            .add(ChangeSortField(field));
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: SortField.name,
+                          child: Row(
+                            children: [
+                              Icon(
+                                state.sortField == SortField.name
+                                    ? Icons.check
+                                    : Icons.check_box_outline_blank,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Name'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: SortField.status,
+                          child: Row(
+                            children: [
+                              Icon(
+                                state.sortField == SortField.status
+                                    ? Icons.check
+                                    : Icons.check_box_outline_blank,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Status'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: SortField.species,
+                          child: Row(
+                            children: [
+                              Icon(
+                                state.sortField == SortField.species
+                                    ? Icons.check
+                                    : Icons.check_box_outline_blank,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Species'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Sort Order Toggle
+                    IconButton(
+                      icon: Icon(
+                        state.sortOrder == SortOrder.ascending
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                      ),
+                      tooltip: state.sortOrder == SortOrder.ascending
+                          ? 'Ascending'
+                          : 'Descending',
+                      onPressed: () {
+                        context
+                            .read<FavoritesBloc>()
+                            .add(const ToggleSortOrder());
+                      },
+                    ),
+                  ],
                 );
               }
               return const SizedBox.shrink();
@@ -120,7 +184,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ),
         itemCount: favorites.length,
         itemBuilder: (context, index) {
-          return _buildCharacterCard(favorites[index]);
+          return _buildCharacterCard(favorites[index], index);
         },
       );
     } else {
@@ -128,13 +192,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
         padding: const EdgeInsets.all(8),
         itemCount: favorites.length,
         itemBuilder: (context, index) {
-          return _buildCharacterCard(favorites[index]);
+          return _buildCharacterCard(favorites[index], index);
         },
       );
     }
   }
 
-  Widget _buildCharacterCard(CharacterEntity character) {
+  Widget _buildCharacterCard(CharacterEntity character, int index) {
     return Dismissible(
       key: Key('favorite_${character.id}'),
       direction: DismissDirection.endToStart,
@@ -169,6 +233,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         );
       },
       onDismissed: (direction) {
+        final removedCharacter = character;
         context.read<FavoritesBloc>().add(
               RemoveFromFavorites(character.id),
             );
@@ -178,8 +243,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
+                // FIX: Add back to favorites instead of removing again
                 context.read<FavoritesBloc>().add(
-                      RemoveFromFavorites(character.id),
+                      AddToFavorites(removedCharacter),
                     );
               },
             ),
@@ -198,6 +264,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
               );
         },
       ),
-    );
+    )
+        .animate()
+        .fadeIn(
+          duration: 400.ms,
+          delay: (50 * (index % 6)).ms,
+        )
+        .slideY(
+          begin: 0.1,
+          end: 0,
+          duration: 400.ms,
+          delay: (50 * (index % 6)).ms,
+        );
   }
 }

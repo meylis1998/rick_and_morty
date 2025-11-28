@@ -1,72 +1,63 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:rick_and_morty/features/characters/domain/usecases/toggle_favorite.dart';
-import 'package:rick_and_morty/features/favorites/domain/usecases/get_favorites.dart';
+import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
 import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_event.dart';
 import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_state.dart';
 
 @injectable
-class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
-  FavoritesBloc(
-    this._getFavorites,
-    this._toggleFavorite,
-  ) : super(const FavoritesInitial()) {
+class FavoritesBloc extends HydratedBloc<FavoritesEvent, FavoritesState> {
+  FavoritesBloc() : super(const FavoritesInitial()) {
     on<LoadFavorites>(_onLoadFavorites);
-    on<WatchFavorites>(_onWatchFavorites);
+    on<AddToFavorites>(_onAddToFavorites);
     on<ToggleSortOrder>(_onToggleSortOrder);
+    on<ChangeSortField>(_onChangeSortField);
     on<RemoveFromFavorites>(_onRemoveFromFavorites);
   }
 
-  final GetFavorites _getFavorites;
-  final ToggleFavorite _toggleFavorite;
-
-  Future<void> _onLoadFavorites(
+  void _onLoadFavorites(
     LoadFavorites event,
     Emitter<FavoritesState> emit,
-  ) async {
-    emit(const FavoritesLoading());
+  ) {
+    final currentState = state;
 
-    final result = await _getFavorites.call();
+    if (currentState is FavoritesLoaded) {
+      // Already loaded from hydrated storage
+      return;
+    }
 
-    result.fold(
-      (failure) => emit(FavoritesError(failure.message)),
-      (favorites) {
-        final sortedFavorites = _sortFavorites(favorites, SortOrder.ascending);
-        emit(
-          FavoritesLoaded(
-            favorites: sortedFavorites,
-            sortOrder: SortOrder.ascending,
-          ),
-        );
-      },
-    );
+    // First load - empty favorites
+    emit(const FavoritesLoaded(
+      favorites: [],
+      sortOrder: SortOrder.ascending,
+    ));
   }
 
-  Future<void> _onWatchFavorites(
-    WatchFavorites event,
+  void _onAddToFavorites(
+    AddToFavorites event,
     Emitter<FavoritesState> emit,
-  ) async {
-    emit(const FavoritesLoading());
+  ) {
+    final currentState = state;
 
-    await emit.forEach(
-      _getFavorites.watch(),
-      onData: (favorites) {
-        final currentState = state;
-        final sortOrder = currentState is FavoritesLoaded
-            ? currentState.sortOrder
-            : SortOrder.ascending;
+    if (currentState is! FavoritesLoaded) {
+      emit(FavoritesLoaded(
+        favorites: [event.character],
+        sortOrder: SortOrder.ascending,
+      ));
+      return;
+    }
 
-        final sortedFavorites = _sortFavorites(favorites, sortOrder);
+    // Check if already exists
+    final exists = currentState.favorites.any((c) => c.id == event.character.id);
+    if (exists) return;
 
-        return FavoritesLoaded(
-          favorites: sortedFavorites,
-          sortOrder: sortOrder,
-        );
-      },
-      onError: (error, stackTrace) {
-        return FavoritesError(error.toString());
-      },
+    final updated = [...currentState.favorites, event.character];
+    final sorted = _sortFavorites(
+      updated,
+      currentState.sortField,
+      currentState.sortOrder,
     );
+
+    emit(currentState.copyWith(favorites: sorted));
   }
 
   void _onToggleSortOrder(
@@ -82,6 +73,7 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
 
     final sortedFavorites = _sortFavorites(
       currentState.favorites,
+      currentState.sortField,
       newSortOrder,
     );
 
@@ -93,33 +85,78 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     );
   }
 
-  Future<void> _onRemoveFromFavorites(
-    RemoveFromFavorites event,
+  void _onChangeSortField(
+    ChangeSortField event,
     Emitter<FavoritesState> emit,
-  ) async {
+  ) {
     final currentState = state;
     if (currentState is! FavoritesLoaded) return;
 
-    final character = currentState.favorites.firstWhere(
-      (c) => c.id == event.characterId,
+    final sortedFavorites = _sortFavorites(
+      currentState.favorites,
+      event.sortField,
+      currentState.sortOrder,
     );
 
-    await _toggleFavorite(character);
+    emit(
+      currentState.copyWith(
+        favorites: sortedFavorites,
+        sortField: event.sortField,
+      ),
+    );
   }
 
-  List<T> _sortFavorites<T extends dynamic>(
-    List<T> favorites,
+  void _onRemoveFromFavorites(
+    RemoveFromFavorites event,
+    Emitter<FavoritesState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! FavoritesLoaded) return;
+
+    final updated = currentState.favorites
+        .where((c) => c.id != event.characterId)
+        .toList();
+
+    emit(currentState.copyWith(favorites: updated));
+  }
+
+  List<CharacterEntity> _sortFavorites(
+    List<CharacterEntity> favorites,
+    SortField sortField,
     SortOrder sortOrder,
   ) {
-    final sorted = List<T>.from(favorites);
+    final sorted = List<CharacterEntity>.from(favorites);
     sorted.sort((a, b) {
-      final aName = (a as dynamic).name as String;
-      final bName = (b as dynamic).name as String;
+      int comparison;
 
-      return sortOrder == SortOrder.ascending
-          ? aName.compareTo(bName)
-          : bName.compareTo(aName);
+      switch (sortField) {
+        case SortField.name:
+          comparison = a.name.compareTo(b.name);
+        case SortField.status:
+          comparison = a.status.compareTo(b.status);
+        case SortField.species:
+          comparison = a.species.compareTo(b.species);
+      }
+
+      return sortOrder == SortOrder.ascending ? comparison : -comparison;
     });
     return sorted;
+  }
+
+  @override
+  FavoritesState? fromJson(Map<String, dynamic> json) {
+    try {
+      return FavoritesLoaded.fromJson(json);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Map<String, dynamic>? toJson(FavoritesState state) {
+    if (state is FavoritesLoaded) {
+      return state.toJson();
+    }
+    return null;
   }
 }

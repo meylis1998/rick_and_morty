@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/presentation/widgets/empty_state_widget.dart';
@@ -20,7 +21,9 @@ class CharactersPage extends StatefulWidget {
 
 class _CharactersPageState extends State<CharactersPage> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   late ViewMode _viewMode;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _CharactersPageState extends State<CharactersPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -66,8 +70,41 @@ class _CharactersPageState extends State<CharactersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Characters'),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search characters...',
+                  border: InputBorder.none,
+                ),
+                style: Theme.of(context).textTheme.titleLarge,
+                onChanged: (query) {
+                  context.read<CharactersBloc>().add(SearchCharacters(query));
+                },
+              )
+            : const Text('Characters'),
         actions: [
+          if (_isSearching)
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                });
+                context.read<CharactersBloc>().add(const ClearSearch());
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ViewModeToggle(
@@ -125,7 +162,29 @@ class _CharactersPageState extends State<CharactersPage> {
     );
   }
 
+  List<CharacterEntity> _getFilteredCharacters(CharactersLoaded state) {
+    if (state.searchQuery.isEmpty) {
+      return state.characters;
+    }
+
+    return state.characters.where((character) {
+      final query = state.searchQuery.toLowerCase();
+      return character.name.toLowerCase().contains(query) ||
+          character.species.toLowerCase().contains(query) ||
+          character.status.toLowerCase().contains(query);
+    }).toList();
+  }
+
   Widget _buildCharactersList(CharactersLoaded state) {
+    final filteredCharacters = _getFilteredCharacters(state);
+
+    if (filteredCharacters.isEmpty && state.searchQuery.isNotEmpty) {
+      return const EmptyStateWidget(
+        message: 'No characters found',
+        icon: Icons.search_off,
+      );
+    }
+
     if (_viewMode == ViewMode.grid) {
       return GridView.builder(
         controller: _scrollController,
@@ -136,9 +195,9 @@ class _CharactersPageState extends State<CharactersPage> {
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
         ),
-        itemCount: state.characters.length + (state.hasReachedMax ? 0 : 1),
+        itemCount: filteredCharacters.length + (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
         itemBuilder: (context, index) {
-          if (index >= state.characters.length) {
+          if (index >= filteredCharacters.length) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -147,16 +206,16 @@ class _CharactersPageState extends State<CharactersPage> {
             );
           }
 
-          return _buildCharacterCard(state.characters[index]);
+          return _buildCharacterCard(filteredCharacters[index], index);
         },
       );
     } else {
       return ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(8),
-        itemCount: state.characters.length + (state.hasReachedMax ? 0 : 1),
+        itemCount: filteredCharacters.length + (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
         itemBuilder: (context, index) {
-          if (index >= state.characters.length) {
+          if (index >= filteredCharacters.length) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -165,7 +224,7 @@ class _CharactersPageState extends State<CharactersPage> {
             );
           }
 
-          return _buildCharacterCard(state.characters[index]);
+          return _buildCharacterCard(filteredCharacters[index], index);
         },
       );
     }
@@ -193,7 +252,7 @@ class _CharactersPageState extends State<CharactersPage> {
             );
           }
 
-          return _buildCharacterCard(characters[index]);
+          return _buildCharacterCard(characters[index], index);
         },
       );
     } else {
@@ -211,13 +270,13 @@ class _CharactersPageState extends State<CharactersPage> {
             );
           }
 
-          return _buildCharacterCard(characters[index]);
+          return _buildCharacterCard(characters[index], index);
         },
       );
     }
   }
 
-  Widget _buildCharacterCard(CharacterEntity character) {
+  Widget _buildCharacterCard(CharacterEntity character, int index) {
     return CharacterCard(
       character: character,
       viewMode: _viewMode,
@@ -229,6 +288,17 @@ class _CharactersPageState extends State<CharactersPage> {
               ToggleFavoriteCharacter(character),
             );
       },
-    );
+    )
+        .animate()
+        .fadeIn(
+          duration: 400.ms,
+          delay: (50 * (index % 6)).ms, // Stagger animation for first 6 items
+        )
+        .slideY(
+          begin: 0.1,
+          end: 0,
+          duration: 400.ms,
+          delay: (50 * (index % 6)).ms,
+        );
   }
 }

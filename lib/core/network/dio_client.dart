@@ -1,7 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
-import 'package:path_provider/path_provider.dart';
 
 class DioClient {
   DioClient() {
@@ -26,22 +23,14 @@ class DioClient {
 
   late final Dio _dio;
 
-  Future<void> _setupInterceptors() async {
-    final cacheDir = await getTemporaryDirectory();
-    final cacheStore = HiveCacheStore(cacheDir.path);
-
-    final cacheOptions = CacheOptions(
-      store: cacheStore,
-      policy: CachePolicy.request,
-      hitCacheOnErrorExcept: [401, 403],
-      maxStale: const Duration(days: 7),
-      priority: CachePriority.high,
-      keyBuilder: (request) => request.uri.toString(),
+  void _setupInterceptors() {
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        error: true,
+      ),
     );
-
-    _dio.interceptors.addAll([
-      DioCacheInterceptor(options: cacheOptions),
-    ]);
   }
 
   Dio get dio => _dio;

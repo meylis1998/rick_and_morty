@@ -1,46 +1,67 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
 import 'package:rick_and_morty/features/characters/domain/usecases/get_characters.dart';
-import 'package:rick_and_morty/features/characters/domain/usecases/toggle_favorite.dart';
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_event.dart';
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_state.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_event.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_state.dart';
 
 @injectable
-class CharactersBloc extends Bloc<CharactersEvent, CharactersState> {
+class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
   CharactersBloc(
     this._getCharacters,
-    this._toggleFavorite,
   ) : super(const CharactersInitial()) {
     on<LoadCharacters>(_onLoadCharacters);
     on<LoadMoreCharacters>(_onLoadMoreCharacters);
     on<ToggleFavoriteCharacter>(_onToggleFavorite);
     on<RefreshCharacters>(_onRefreshCharacters);
+    on<EnrichWithFavorites>(_onEnrichWithFavorites);
+    on<SearchCharacters>(_onSearchCharacters);
+    on<ClearSearch>(_onClearSearch);
   }
 
   final GetCharacters _getCharacters;
-  final ToggleFavorite _toggleFavorite;
+
+  // Get FavoritesBloc from GetIt to avoid circular dependency
+  FavoritesBloc? get _favoritesBloc {
+    try {
+      return GetIt.instance<FavoritesBloc>();
+    } catch (e) {
+      return null;
+    }
+  }
 
   Future<void> _onLoadCharacters(
     LoadCharacters event,
     Emitter<CharactersState> emit,
   ) async {
-    if (event.refresh && state is CharactersLoaded) {
-      emit(CharactersLoading());
-    } else if (state is! CharactersLoaded) {
-      emit(CharactersLoading());
+    // Don't reload if we have cached data and it's not a refresh
+    if (!event.refresh && state is CharactersLoaded) {
+      // Enrich existing data with current favorites
+      add(const EnrichWithFavorites());
+      return;
     }
 
+    emit(const CharactersLoading());
     final result = await _getCharacters(1);
 
     result.fold(
       (failure) => emit(CharactersError(failure.message)),
-      (characters) => emit(
-        CharactersLoaded(
-          characters: characters,
-          hasReachedMax: characters.length < 20,
-          currentPage: 1,
-        ),
-      ),
+      (characters) {
+        // Enrich with favorites from FavoritesBloc
+        final enriched = _enrichWithFavorites(characters);
+
+        emit(
+          CharactersLoaded(
+            characters: enriched,
+            hasReachedMax: characters.length < 20,
+            currentPage: 1,
+          ),
+        );
+      },
     );
   }
 
@@ -63,10 +84,13 @@ class CharactersBloc extends Bloc<CharactersEvent, CharactersState> {
         currentState.copyWith(),
       ),
       (newCharacters) {
+        // Enrich new characters with favorites
+        final enrichedNew = _enrichWithFavorites(newCharacters);
         final hasReachedMax = newCharacters.length < 20;
+
         emit(
           CharactersLoaded(
-            characters: currentState.characters + newCharacters,
+            characters: currentState.characters + enrichedNew,
             hasReachedMax: hasReachedMax,
             currentPage: nextPage,
           ),
@@ -82,27 +106,31 @@ class CharactersBloc extends Bloc<CharactersEvent, CharactersState> {
     final currentState = state;
     if (currentState is! CharactersLoaded) return;
 
-    final result = await _toggleFavorite(event.character);
+    // Optimistically update UI
+    final updatedCharacters = currentState.characters.map((character) {
+      if (character.id == event.character.id) {
+        return character.copyWith(isFavorite: !character.isFavorite);
+      }
+      return character;
+    }).toList();
 
-    result.fold(
-      (failure) {
-        // Optionally show error
-      },
-      (_) {
-        final updatedCharacters = currentState.characters.map((character) {
-          if (character.id == event.character.id) {
-            return character.copyWith(isFavorite: !character.isFavorite);
-          }
-          return character;
-        }).toList();
-
-        emit(
-          currentState.copyWith(
-            characters: updatedCharacters,
-          ),
-        );
-      },
+    emit(
+      currentState.copyWith(
+        characters: updatedCharacters,
+      ),
     );
+
+    // Sync with FavoritesBloc (event-based)
+    if (_favoritesBloc != null) {
+      if (event.character.isFavorite) {
+        // Was favorite, now removing
+        _favoritesBloc!.add(RemoveFromFavorites(event.character.id));
+      } else {
+        // Was not favorite, now adding
+        final updatedChar = event.character.copyWith(isFavorite: true);
+        _favoritesBloc!.add(AddToFavorites(updatedChar));
+      }
+    }
   }
 
   Future<void> _onRefreshCharacters(
@@ -110,5 +138,64 @@ class CharactersBloc extends Bloc<CharactersEvent, CharactersState> {
     Emitter<CharactersState> emit,
   ) async {
     add(const LoadCharacters(refresh: true));
+  }
+
+  void _onEnrichWithFavorites(
+    EnrichWithFavorites event,
+    Emitter<CharactersState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! CharactersLoaded) return;
+
+    final enriched = _enrichWithFavorites(currentState.characters);
+    emit(currentState.copyWith(characters: enriched));
+  }
+
+  List<CharacterEntity> _enrichWithFavorites(List<CharacterEntity> characters) {
+    final favoritesState = _favoritesBloc?.state;
+    if (favoritesState is! FavoritesLoaded) return characters;
+
+    final favoriteIds = favoritesState.favorites.map((f) => f.id).toSet();
+
+    return characters.map((char) {
+      return char.copyWith(isFavorite: favoriteIds.contains(char.id));
+    }).toList();
+  }
+
+  void _onSearchCharacters(
+    SearchCharacters event,
+    Emitter<CharactersState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! CharactersLoaded) return;
+
+    emit(currentState.copyWith(searchQuery: event.query.toLowerCase()));
+  }
+
+  void _onClearSearch(
+    ClearSearch event,
+    Emitter<CharactersState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! CharactersLoaded) return;
+
+    emit(currentState.copyWith(searchQuery: ''));
+  }
+
+  @override
+  CharactersState? fromJson(Map<String, dynamic> json) {
+    try {
+      return CharactersLoaded.fromJson(json);
+    } catch (e) {
+      return null; // Return null for invalid/old state
+    }
+  }
+
+  @override
+  Map<String, dynamic>? toJson(CharactersState state) {
+    if (state is CharactersLoaded) {
+      return state.toJson();
+    }
+    return null; // Only persist CharactersLoaded
   }
 }

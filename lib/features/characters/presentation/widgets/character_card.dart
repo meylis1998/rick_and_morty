@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:rick_and_morty/core/presentation/widgets/view_mode_toggle.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
 
@@ -41,13 +42,15 @@ class CharacterCard extends StatelessWidget {
                   imageUrl: character.image,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Icon(Icons.error_outline),
                   ),
                 ),
@@ -92,7 +95,8 @@ class CharacterCard extends StatelessWidget {
                     Text(
                       character.locationName,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -127,7 +131,8 @@ class CharacterCard extends StatelessWidget {
                     placeholder: (context, url) => Container(
                       width: 80,
                       height: 80,
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Center(
                         child: CircularProgressIndicator(),
                       ),
@@ -135,7 +140,8 @@ class CharacterCard extends StatelessWidget {
                     errorWidget: (context, url, error) => Container(
                       width: 80,
                       height: 80,
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.error_outline),
                     ),
                   ),
@@ -171,7 +177,8 @@ class CharacterCard extends StatelessWidget {
                     Text(
                       'Last known location:',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     Text(
@@ -213,8 +220,9 @@ class CharacterCard extends StatelessWidget {
   }
 
   Widget _buildFavoriteButton(BuildContext context) {
-    return IconButton(
-      icon: AnimatedSwitcher(
+    return GestureDetector(
+      onTap: onFavoriteToggle,
+      child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         transitionBuilder: (child, animation) {
           return ScaleTransition(
@@ -223,15 +231,27 @@ class CharacterCard extends StatelessWidget {
           );
         },
         child: Icon(
-          character.isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+          character.isFavorite
+              ? CupertinoIcons.heart_fill
+              : CupertinoIcons.heart,
           key: ValueKey(character.isFavorite),
           color: character.isFavorite
               ? Colors.red
               : Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        )
+            .animate(
+              target: character.isFavorite ? 1 : 0,
+            )
+            .shimmer(
+              duration: 800.ms,
+              color: Colors.red.withOpacity(0.5),
+            )
+            .scale(
+              begin: const Offset(1.0, 1.0),
+              end: const Offset(1.2, 1.2),
+              duration: 200.ms,
+            ),
       ),
-      onPressed: onFavoriteToggle,
-      visualDensity: VisualDensity.compact,
     );
   }
 }

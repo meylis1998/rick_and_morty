@@ -33,3 +33,23 @@ class ToggleFavoriteCharacter extends CharactersEvent {
 class RefreshCharacters extends CharactersEvent {
   const RefreshCharacters();
 }
+
+class EnrichWithFavorites extends CharactersEvent {
+  const EnrichWithFavorites();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class SearchCharacters extends CharactersEvent {
+  const SearchCharacters(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class ClearSearch extends CharactersEvent {
+  const ClearSearch();
+}
