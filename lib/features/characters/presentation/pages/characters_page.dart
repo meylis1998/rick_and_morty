@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/presentation/widgets/empty_state_widget.dart';
 import 'package:rick_and_morty/core/presentation/widgets/error_widget.dart';
+import 'package:rick_and_morty/core/presentation/widgets/theme_toggle.dart';
 import 'package:rick_and_morty/core/presentation/widgets/view_mode_toggle.dart';
 import 'package:rick_and_morty/core/services/preferences_service.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
@@ -105,6 +106,7 @@ class _CharactersPageState extends State<CharactersPage> {
                 });
               },
             ),
+          const ThemeToggle(),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ViewModeToggle(
@@ -195,7 +197,8 @@ class _CharactersPageState extends State<CharactersPage> {
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
         ),
-        itemCount: filteredCharacters.length + (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
+        itemCount: filteredCharacters.length +
+            (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
         itemBuilder: (context, index) {
           if (index >= filteredCharacters.length) {
             return const Center(
@@ -213,7 +216,8 @@ class _CharactersPageState extends State<CharactersPage> {
       return ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(8),
-        itemCount: filteredCharacters.length + (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
+        itemCount: filteredCharacters.length +
+            (state.hasReachedMax || state.searchQuery.isNotEmpty ? 0 : 1),
         itemBuilder: (context, index) {
           if (index >= filteredCharacters.length) {
             return const Center(

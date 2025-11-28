@@ -22,8 +22,6 @@ class CharacterRepositoryImpl implements CharacterRepository {
     try {
       final characters = await _remoteDataSource.getCharacters(page);
 
-      // Convert to entities without favorite status
-      // BLoC will handle favorite enrichment
       final entities = characters.map((c) => c.toEntity()).toList();
 
       return Right(entities);

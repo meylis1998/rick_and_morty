@@ -15,7 +15,6 @@ import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_ev
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize HydratedBloc storage
   final storage = await HydratedStorage.build(
     storageDirectory: HydratedStorageDirectory(
       (await getApplicationDocumentsDirectory()).path,
@@ -24,7 +23,6 @@ void main() async {
 
   await configureDependencies();
 
-  // Use HydratedBloc.storage for hydrated_bloc 10.x
   HydratedBloc.storage = storage;
   runApp(const MyApp());
 }
@@ -34,6 +32,10 @@ class MyApp extends StatefulWidget {
 
   @override
   State<MyApp> createState() => _MyAppState();
+
+  static _MyAppState? of(BuildContext context) {
+    return context.findAncestorStateOfType<_MyAppState>();
+  }
 }
 
 class _MyAppState extends State<MyApp> {
@@ -60,6 +62,26 @@ class _MyAppState extends State<MyApp> {
       }
     });
   }
+
+  Future<void> changeThemeMode(ThemeMode mode) async {
+    setState(() {
+      _themeMode = mode;
+    });
+
+    String modeString;
+    switch (mode) {
+      case ThemeMode.light:
+        modeString = 'light';
+      case ThemeMode.dark:
+        modeString = 'dark';
+      case ThemeMode.system:
+        modeString = 'system';
+    }
+
+    await _prefsService.setThemeMode(modeString);
+  }
+
+  ThemeMode get currentThemeMode => _themeMode;
 
   @override
   Widget build(BuildContext context) {

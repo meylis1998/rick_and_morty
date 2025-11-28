@@ -25,7 +25,6 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
 
   final GetCharacters _getCharacters;
 
-  // Get FavoritesBloc from GetIt to avoid circular dependency
   FavoritesBloc? get _favoritesBloc {
     try {
       return GetIt.instance<FavoritesBloc>();
@@ -38,9 +37,7 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     LoadCharacters event,
     Emitter<CharactersState> emit,
   ) async {
-    // Don't reload if we have cached data and it's not a refresh
     if (!event.refresh && state is CharactersLoaded) {
-      // Enrich existing data with current favorites
       add(const EnrichWithFavorites());
       return;
     }
@@ -51,7 +48,6 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     result.fold(
       (failure) => emit(CharactersError(failure.message)),
       (characters) {
-        // Enrich with favorites from FavoritesBloc
         final enriched = _enrichWithFavorites(characters);
 
         emit(
@@ -84,7 +80,6 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
         currentState.copyWith(),
       ),
       (newCharacters) {
-        // Enrich new characters with favorites
         final enrichedNew = _enrichWithFavorites(newCharacters);
         final hasReachedMax = newCharacters.length < 20;
 
@@ -106,7 +101,6 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     final currentState = state;
     if (currentState is! CharactersLoaded) return;
 
-    // Optimistically update UI
     final updatedCharacters = currentState.characters.map((character) {
       if (character.id == event.character.id) {
         return character.copyWith(isFavorite: !character.isFavorite);
@@ -120,13 +114,10 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
       ),
     );
 
-    // Sync with FavoritesBloc (event-based)
     if (_favoritesBloc != null) {
       if (event.character.isFavorite) {
-        // Was favorite, now removing
         _favoritesBloc!.add(RemoveFromFavorites(event.character.id));
       } else {
-        // Was not favorite, now adding
         final updatedChar = event.character.copyWith(isFavorite: true);
         _favoritesBloc!.add(AddToFavorites(updatedChar));
       }

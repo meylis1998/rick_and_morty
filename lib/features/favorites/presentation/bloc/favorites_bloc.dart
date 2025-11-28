@@ -21,11 +21,9 @@ class FavoritesBloc extends HydratedBloc<FavoritesEvent, FavoritesState> {
     final currentState = state;
 
     if (currentState is FavoritesLoaded) {
-      // Already loaded from hydrated storage
       return;
     }
 
-    // First load - empty favorites
     emit(const FavoritesLoaded(
       favorites: [],
       sortOrder: SortOrder.ascending,
@@ -46,8 +44,8 @@ class FavoritesBloc extends HydratedBloc<FavoritesEvent, FavoritesState> {
       return;
     }
 
-    // Check if already exists
-    final exists = currentState.favorites.any((c) => c.id == event.character.id);
+    final exists =
+        currentState.favorites.any((c) => c.id == event.character.id);
     if (exists) return;
 
     final updated = [...currentState.favorites, event.character];
@@ -113,9 +111,8 @@ class FavoritesBloc extends HydratedBloc<FavoritesEvent, FavoritesState> {
     final currentState = state;
     if (currentState is! FavoritesLoaded) return;
 
-    final updated = currentState.favorites
-        .where((c) => c.id != event.characterId)
-        .toList();
+    final updated =
+        currentState.favorites.where((c) => c.id != event.characterId).toList();
 
     emit(currentState.copyWith(favorites: updated));
   }

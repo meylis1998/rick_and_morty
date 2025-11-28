@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/presentation/widgets/empty_state_widget.dart';
 import 'package:rick_and_morty/core/presentation/widgets/error_widget.dart';
+import 'package:rick_and_morty/core/presentation/widgets/theme_toggle.dart';
 import 'package:rick_and_morty/core/presentation/widgets/view_mode_toggle.dart';
 import 'package:rick_and_morty/core/services/preferences_service.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
@@ -52,7 +53,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Sort Field Selector
                     PopupMenuButton<SortField>(
                       icon: const Icon(Icons.filter_list),
                       tooltip: 'Sort by',
@@ -109,7 +109,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                       ],
                     ),
-                    // Sort Order Toggle
                     IconButton(
                       icon: Icon(
                         state.sortOrder == SortOrder.ascending
@@ -131,6 +130,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               return const SizedBox.shrink();
             },
           ),
+          const ThemeToggle(),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ViewModeToggle(
@@ -158,7 +158,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
           if (state is FavoritesLoaded) {
             if (state.favorites.isEmpty) {
               return const EmptyStateWidget(
-                message: 'No favorites yet\nAdd some characters to your favorites!',
+                message:
+                    'No favorites yet\nAdd some characters to your favorites!',
                 icon: Icons.favorite_border,
               );
             }
@@ -243,7 +244,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
-                // FIX: Add back to favorites instead of removing again
                 context.read<FavoritesBloc>().add(
                       AddToFavorites(removedCharacter),
                     );

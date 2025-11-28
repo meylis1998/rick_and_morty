@@ -53,7 +53,8 @@ class CharactersLoaded extends CharactersState {
   Map<String, dynamic> toJson() => _$CharactersLoadedToJson(this);
 
   @override
-  List<Object?> get props => [characters, hasReachedMax, currentPage, searchQuery];
+  List<Object?> get props =>
+      [characters, hasReachedMax, currentPage, searchQuery];
 }
 
 class CharactersError extends CharactersState {

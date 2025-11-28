@@ -46,7 +46,9 @@ class CharacterDetailPage extends StatelessWidget {
             actions: [
               IconButton(
                 icon: Icon(
-                  character.isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                  character.isFavorite
+                      ? CupertinoIcons.heart_fill
+                      : CupertinoIcons.heart,
                   color: character.isFavorite ? Colors.red : null,
                 ),
                 onPressed: () {
