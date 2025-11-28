@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,8 @@ import 'package:rick_and_morty/features/characters/presentation/bloc/characters_
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_event.dart';
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_state.dart';
 import 'package:rick_and_morty/features/characters/presentation/widgets/character_card.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_state.dart';
 
 class CharactersPage extends StatefulWidget {
   const CharactersPage({super.key});
@@ -99,7 +102,7 @@ class _CharactersPageState extends State<CharactersPage> {
             )
           else
             IconButton(
-              icon: const Icon(Icons.search),
+              icon: const Icon(CupertinoIcons.search),
               onPressed: () {
                 setState(() {
                   _isSearching = true;
@@ -116,8 +119,13 @@ class _CharactersPageState extends State<CharactersPage> {
           ),
         ],
       ),
-      body: BlocBuilder<CharactersBloc, CharactersState>(
-        builder: (context, state) {
+      body: BlocListener<FavoritesBloc, FavoritesState>(
+        listener: (context, state) {
+          context.read<CharactersBloc>().add(const EnrichWithFavorites());
+        },
+        child: BlocBuilder<CharactersBloc, CharactersState>(
+          buildWhen: (previous, current) => previous != current,
+          builder: (context, state) {
           if (state is CharactersLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -159,7 +167,8 @@ class _CharactersPageState extends State<CharactersPage> {
           }
 
           return const SizedBox.shrink();
-        },
+          },
+        ),
       ),
     );
   }
@@ -183,7 +192,7 @@ class _CharactersPageState extends State<CharactersPage> {
     if (filteredCharacters.isEmpty && state.searchQuery.isNotEmpty) {
       return const EmptyStateWidget(
         message: 'No characters found',
-        icon: Icons.search_off,
+        icon: CupertinoIcons.search,
       );
     }
 
@@ -284,8 +293,15 @@ class _CharactersPageState extends State<CharactersPage> {
     return CharacterCard(
       character: character,
       viewMode: _viewMode,
+      heroTagPrefix: 'characters',
       onTap: () {
-        context.push('/character/${character.id}', extra: character);
+        context.push(
+          '/character/${character.id}',
+          extra: {
+            'character': character,
+            'heroTag': 'characters_${character.id}',
+          },
+        );
       },
       onFavoriteToggle: () {
         context.read<CharactersBloc>().add(

@@ -6,23 +6,22 @@ part of 'character_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-CharacterModel _$CharacterModelFromJson(Map<String, dynamic> json) =>
-    CharacterModel(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-      status: json['status'] as String,
-      species: json['species'] as String,
-      type: json['type'] as String,
-      gender: json['gender'] as String,
-      origin: OriginModel.fromJson(json['origin'] as Map<String, dynamic>),
-      location:
-          LocationModel.fromJson(json['location'] as Map<String, dynamic>),
-      image: json['image'] as String,
-      episode:
-          (json['episode'] as List<dynamic>).map((e) => e as String).toList(),
-      url: json['url'] as String,
-      created: json['created'] as String,
-    );
+CharacterModel _$CharacterModelFromJson(
+  Map<String, dynamic> json,
+) => CharacterModel(
+  id: (json['id'] as num).toInt(),
+  name: json['name'] as String,
+  status: json['status'] as String,
+  species: json['species'] as String,
+  type: json['type'] as String,
+  gender: json['gender'] as String,
+  origin: OriginModel.fromJson(json['origin'] as Map<String, dynamic>),
+  location: LocationModel.fromJson(json['location'] as Map<String, dynamic>),
+  image: json['image'] as String,
+  episode: (json['episode'] as List<dynamic>).map((e) => e as String).toList(),
+  url: json['url'] as String,
+  created: json['created'] as String,
+);
 
 Map<String, dynamic> _$CharacterModelToJson(CharacterModel instance) =>
     <String, dynamic>{
@@ -40,25 +39,14 @@ Map<String, dynamic> _$CharacterModelToJson(CharacterModel instance) =>
       'created': instance.created,
     };
 
-OriginModel _$OriginModelFromJson(Map<String, dynamic> json) => OriginModel(
-      name: json['name'] as String,
-      url: json['url'] as String,
-    );
+OriginModel _$OriginModelFromJson(Map<String, dynamic> json) =>
+    OriginModel(name: json['name'] as String, url: json['url'] as String);
 
 Map<String, dynamic> _$OriginModelToJson(OriginModel instance) =>
-    <String, dynamic>{
-      'name': instance.name,
-      'url': instance.url,
-    };
+    <String, dynamic>{'name': instance.name, 'url': instance.url};
 
 LocationModel _$LocationModelFromJson(Map<String, dynamic> json) =>
-    LocationModel(
-      name: json['name'] as String,
-      url: json['url'] as String,
-    );
+    LocationModel(name: json['name'] as String, url: json['url'] as String);
 
 Map<String, dynamic> _$LocationModelToJson(LocationModel instance) =>
-    <String, dynamic>{
-      'name': instance.name,
-      'url': instance.url,
-    };
+    <String, dynamic>{'name': instance.name, 'url': instance.url};

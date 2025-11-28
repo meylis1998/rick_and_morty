@@ -5,14 +5,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_bloc.dart';
 import 'package:rick_and_morty/features/characters/presentation/bloc/characters_event.dart';
+import 'package:rick_and_morty/features/characters/presentation/bloc/characters_state.dart';
 
 class CharacterDetailPage extends StatelessWidget {
   const CharacterDetailPage({
     required this.character,
+    this.heroTag,
     super.key,
   });
 
   final CharacterEntity character;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +27,7 @@ class CharacterDetailPage extends StatelessWidget {
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
-                tag: 'character_${character.id}',
+                tag: heroTag ?? 'character_${character.id}',
                 child: CachedNetworkImage(
                   imageUrl: character.image,
                   fit: BoxFit.cover,
@@ -44,17 +47,33 @@ class CharacterDetailPage extends StatelessWidget {
               ),
             ),
             actions: [
-              IconButton(
-                icon: Icon(
-                  character.isFavorite
-                      ? CupertinoIcons.heart_fill
-                      : CupertinoIcons.heart,
-                  color: character.isFavorite ? Colors.red : null,
-                ),
-                onPressed: () {
-                  context.read<CharactersBloc>().add(
-                        ToggleFavoriteCharacter(character),
-                      );
+              BlocBuilder<CharactersBloc, CharactersState>(
+                builder: (context, state) {
+                  bool isFavorite = character.isFavorite;
+
+                  if (state is CharactersLoaded) {
+                    final currentCharacter = state.characters.firstWhere(
+                      (c) => c.id == character.id,
+                      orElse: () => character,
+                    );
+                    isFavorite = currentCharacter.isFavorite;
+                  }
+
+                  return IconButton(
+                    icon: Icon(
+                      isFavorite
+                          ? CupertinoIcons.heart_fill
+                          : CupertinoIcons.heart,
+                      color: isFavorite ? Colors.red : null,
+                    ),
+                    onPressed: () {
+                      context.read<CharactersBloc>().add(
+                            ToggleFavoriteCharacter(
+                              character.copyWith(isFavorite: isFavorite),
+                            ),
+                          );
+                    },
+                  );
                 },
               ),
             ],

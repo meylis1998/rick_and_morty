@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,8 +31,8 @@ class BottomNavShell extends StatelessWidget {
             label: 'Characters',
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_border),
-            selectedIcon: Icon(Icons.favorite),
+            icon: Icon(CupertinoIcons.heart),
+            selectedIcon: Icon(CupertinoIcons.heart_fill),
             label: 'Favorites',
           ),
         ],

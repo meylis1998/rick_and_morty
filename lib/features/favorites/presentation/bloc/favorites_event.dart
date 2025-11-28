@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
-import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_state.dart';
 
 abstract class FavoritesEvent extends Equatable {
   const FavoritesEvent();
@@ -20,19 +19,6 @@ class AddToFavorites extends FavoritesEvent {
 
   @override
   List<Object?> get props => [character];
-}
-
-class ToggleSortOrder extends FavoritesEvent {
-  const ToggleSortOrder();
-}
-
-class ChangeSortField extends FavoritesEvent {
-  const ChangeSortField(this.sortField);
-
-  final SortField sortField;
-
-  @override
-  List<Object?> get props => [sortField];
 }
 
 class RemoveFromFavorites extends FavoritesEvent {

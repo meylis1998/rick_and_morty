@@ -35,7 +35,18 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/character/:id',
       builder: (context, state) {
-        final character = state.extra as CharacterEntity?;
+        // Handle both old format (CharacterEntity) and new format (Map)
+        final extra = state.extra;
+        CharacterEntity? character;
+        String? heroTag;
+
+        if (extra is Map<String, dynamic>) {
+          character = extra['character'] as CharacterEntity?;
+          heroTag = extra['heroTag'] as String?;
+        } else if (extra is CharacterEntity) {
+          character = extra;
+        }
+
         if (character == null) {
           return const Scaffold(
             body: Center(
@@ -43,7 +54,10 @@ final GoRouter appRouter = GoRouter(
             ),
           );
         }
-        return CharacterDetailPage(character: character);
+        return CharacterDetailPage(
+          character: character,
+          heroTag: heroTag,
+        );
       },
     ),
   ],

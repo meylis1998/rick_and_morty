@@ -1,16 +1,17 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/presentation/widgets/empty_state_widget.dart';
-import 'package:rick_and_morty/core/presentation/widgets/error_widget.dart';
 import 'package:rick_and_morty/core/presentation/widgets/theme_toggle.dart';
 import 'package:rick_and_morty/core/presentation/widgets/view_mode_toggle.dart';
 import 'package:rick_and_morty/core/services/preferences_service.dart';
 import 'package:rick_and_morty/features/characters/domain/entities/character_entity.dart';
+import 'package:rick_and_morty/features/characters/presentation/bloc/characters_bloc.dart';
+import 'package:rick_and_morty/features/characters/presentation/bloc/characters_event.dart';
 import 'package:rick_and_morty/features/characters/presentation/widgets/character_card.dart';
 import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_bloc.dart';
-import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_event.dart';
 import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_state.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -47,89 +48,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
       appBar: AppBar(
         title: const Text('Favorites'),
         actions: [
-          BlocBuilder<FavoritesBloc, FavoritesState>(
-            builder: (context, state) {
-              if (state is FavoritesLoaded && state.favorites.isNotEmpty) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PopupMenuButton<SortField>(
-                      icon: const Icon(Icons.filter_list),
-                      tooltip: 'Sort by',
-                      onSelected: (SortField field) {
-                        context
-                            .read<FavoritesBloc>()
-                            .add(ChangeSortField(field));
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: SortField.name,
-                          child: Row(
-                            children: [
-                              Icon(
-                                state.sortField == SortField.name
-                                    ? Icons.check
-                                    : Icons.check_box_outline_blank,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Name'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: SortField.status,
-                          child: Row(
-                            children: [
-                              Icon(
-                                state.sortField == SortField.status
-                                    ? Icons.check
-                                    : Icons.check_box_outline_blank,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Status'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: SortField.species,
-                          child: Row(
-                            children: [
-                              Icon(
-                                state.sortField == SortField.species
-                                    ? Icons.check
-                                    : Icons.check_box_outline_blank,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Species'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        state.sortOrder == SortOrder.ascending
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
-                      ),
-                      tooltip: state.sortOrder == SortOrder.ascending
-                          ? 'Ascending'
-                          : 'Descending',
-                      onPressed: () {
-                        context
-                            .read<FavoritesBloc>()
-                            .add(const ToggleSortOrder());
-                      },
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
           const ThemeToggle(),
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -141,33 +59,23 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ],
       ),
       body: BlocBuilder<FavoritesBloc, FavoritesState>(
+        buildWhen: (previous, current) => previous != current,
         builder: (context, state) {
-          if (state is FavoritesLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final favoritesState = state as FavoritesLoaded;
 
-          if (state is FavoritesError) {
-            return AppErrorWidget(
-              message: state.message,
-              onRetry: () {
-                context.read<FavoritesBloc>().add(const LoadFavorites());
-              },
+          if (favoritesState.favorites.isEmpty) {
+            return const EmptyStateWidget(
+              message: 'No favorites yet\nAdd some characters to your favorites!',
+              icon: CupertinoIcons.heart,
             );
           }
 
-          if (state is FavoritesLoaded) {
-            if (state.favorites.isEmpty) {
-              return const EmptyStateWidget(
-                message:
-                    'No favorites yet\nAdd some characters to your favorites!',
-                icon: Icons.favorite_border,
-              );
-            }
-
-            return _buildFavoritesList(state.favorites);
-          }
-
-          return const SizedBox.shrink();
+          return KeyedSubtree(
+            key: ValueKey(
+              'favorites_${favoritesState.favorites.length}_${favoritesState.favorites.map((f) => f.id).join('_')}',
+            ),
+            child: _buildFavoritesList(favoritesState.favorites),
+          );
         },
       ),
     );
@@ -200,6 +108,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Widget _buildCharacterCard(CharacterEntity character, int index) {
+    final favoriteCharacter = character.copyWith(isFavorite: true);
+
     return Dismissible(
       key: Key('favorite_${character.id}'),
       direction: DismissDirection.endToStart,
@@ -213,7 +123,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ),
       ),
       confirmDismiss: (direction) async {
-        return await showDialog<bool>(
+        return showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Remove from favorites?'),
@@ -234,9 +144,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         );
       },
       onDismissed: (direction) {
-        final removedCharacter = character;
-        context.read<FavoritesBloc>().add(
-              RemoveFromFavorites(character.id),
+        final removedCharacter = favoriteCharacter;
+        context.read<CharactersBloc>().add(
+              ToggleFavoriteCharacter(removedCharacter),
             );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -244,8 +154,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
-                context.read<FavoritesBloc>().add(
-                      AddToFavorites(removedCharacter),
+                context.read<CharactersBloc>().add(
+                      ToggleFavoriteCharacter(
+                        removedCharacter.copyWith(isFavorite: false),
+                      ),
                     );
               },
             ),
@@ -253,14 +165,22 @@ class _FavoritesPageState extends State<FavoritesPage> {
         );
       },
       child: CharacterCard(
-        character: character,
+        key: ValueKey('fav_card_${character.id}_${character.isFavorite}'),
+        character: favoriteCharacter,
         viewMode: _viewMode,
+        heroTagPrefix: 'favorites',
         onTap: () {
-          context.push('/character/${character.id}', extra: character);
+          context.push(
+            '/character/${character.id}',
+            extra: {
+              'character': favoriteCharacter,
+              'heroTag': 'favorites_${character.id}',
+            },
+          );
         },
         onFavoriteToggle: () {
-          context.read<FavoritesBloc>().add(
-                RemoveFromFavorites(character.id),
+          context.read<CharactersBloc>().add(
+                ToggleFavoriteCharacter(favoriteCharacter),
               );
         },
       ),

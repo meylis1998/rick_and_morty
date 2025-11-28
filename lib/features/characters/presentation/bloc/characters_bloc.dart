@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -21,6 +23,9 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     on<EnrichWithFavorites>(_onEnrichWithFavorites);
     on<SearchCharacters>(_onSearchCharacters);
     on<ClearSearch>(_onClearSearch);
+
+    // Stream subscription removed - using BlocListener in CharactersPage instead
+    // This ensures proper lifecycle management and guarantees listener fires
   }
 
   final GetCharacters _getCharacters;
@@ -70,14 +75,17 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
       return;
     }
 
-    emit(CharactersLoadingMore(currentState.characters));
-
     final nextPage = currentState.currentPage + 1;
     final result = await _getCharacters(nextPage);
 
     result.fold(
       (failure) => emit(
-        currentState.copyWith(),
+        CharactersLoaded(
+          characters: currentState.characters,
+          hasReachedMax: currentState.hasReachedMax,
+          currentPage: currentState.currentPage,
+          searchQuery: currentState.searchQuery,
+        ),
       ),
       (newCharacters) {
         final enrichedNew = _enrichWithFavorites(newCharacters);
@@ -88,6 +96,7 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
             characters: currentState.characters + enrichedNew,
             hasReachedMax: hasReachedMax,
             currentPage: nextPage,
+            searchQuery: currentState.searchQuery,
           ),
         );
       },
@@ -101,25 +110,30 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     final currentState = state;
     if (currentState is! CharactersLoaded) return;
 
+    final newFavoriteState = !event.character.isFavorite;
+
     final updatedCharacters = currentState.characters.map((character) {
       if (character.id == event.character.id) {
-        return character.copyWith(isFavorite: !character.isFavorite);
+        return character.copyWith(isFavorite: newFavoriteState);
       }
       return character;
     }).toList();
 
     emit(
-      currentState.copyWith(
+      CharactersLoaded(
         characters: updatedCharacters,
+        hasReachedMax: currentState.hasReachedMax,
+        currentPage: currentState.currentPage,
+        searchQuery: currentState.searchQuery,
       ),
     );
 
     if (_favoritesBloc != null) {
-      if (event.character.isFavorite) {
-        _favoritesBloc!.add(RemoveFromFavorites(event.character.id));
-      } else {
+      if (newFavoriteState) {
         final updatedChar = event.character.copyWith(isFavorite: true);
         _favoritesBloc!.add(AddToFavorites(updatedChar));
+      } else {
+        _favoritesBloc!.add(RemoveFromFavorites(event.character.id));
       }
     }
   }
@@ -139,12 +153,22 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     if (currentState is! CharactersLoaded) return;
 
     final enriched = _enrichWithFavorites(currentState.characters);
-    emit(currentState.copyWith(characters: enriched));
+
+    emit(
+      CharactersLoaded(
+        characters: enriched,
+        hasReachedMax: currentState.hasReachedMax,
+        currentPage: currentState.currentPage,
+        searchQuery: currentState.searchQuery,
+      ),
+    );
   }
 
   List<CharacterEntity> _enrichWithFavorites(List<CharacterEntity> characters) {
     final favoritesState = _favoritesBloc?.state;
-    if (favoritesState is! FavoritesLoaded) return characters;
+    if (favoritesState is! FavoritesLoaded) {
+      return characters;
+    }
 
     final favoriteIds = favoritesState.favorites.map((f) => f.id).toSet();
 
@@ -160,7 +184,14 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     final currentState = state;
     if (currentState is! CharactersLoaded) return;
 
-    emit(currentState.copyWith(searchQuery: event.query.toLowerCase()));
+    emit(
+      CharactersLoaded(
+        characters: currentState.characters,
+        hasReachedMax: currentState.hasReachedMax,
+        currentPage: currentState.currentPage,
+        searchQuery: event.query.toLowerCase(),
+      ),
+    );
   }
 
   void _onClearSearch(
@@ -170,7 +201,14 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     final currentState = state;
     if (currentState is! CharactersLoaded) return;
 
-    emit(currentState.copyWith(searchQuery: ''));
+    emit(
+      CharactersLoaded(
+        characters: currentState.characters,
+        hasReachedMax: currentState.hasReachedMax,
+        currentPage: currentState.currentPage,
+        searchQuery: '',
+      ),
+    );
   }
 
   @override
@@ -178,7 +216,7 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     try {
       return CharactersLoaded.fromJson(json);
     } catch (e) {
-      return null; // Return null for invalid/old state
+      return null;
     }
   }
 
@@ -187,6 +225,6 @@ class CharactersBloc extends HydratedBloc<CharactersEvent, CharactersState> {
     if (state is CharactersLoaded) {
       return state.toJson();
     }
-    return null; // Only persist CharactersLoaded
+    return null;
   }
 }

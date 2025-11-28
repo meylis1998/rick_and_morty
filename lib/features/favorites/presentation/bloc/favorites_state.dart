@@ -4,10 +4,6 @@ import 'package:rick_and_morty/features/characters/domain/entities/character_ent
 
 part 'favorites_state.g.dart';
 
-enum SortOrder { ascending, descending }
-
-enum SortField { name, status, species }
-
 abstract class FavoritesState extends Equatable {
   const FavoritesState();
 
@@ -27,23 +23,15 @@ class FavoritesLoading extends FavoritesState {
 class FavoritesLoaded extends FavoritesState {
   const FavoritesLoaded({
     required this.favorites,
-    this.sortOrder = SortOrder.ascending,
-    this.sortField = SortField.name,
   });
 
   final List<CharacterEntity> favorites;
-  final SortOrder sortOrder;
-  final SortField sortField;
 
   FavoritesLoaded copyWith({
     List<CharacterEntity>? favorites,
-    SortOrder? sortOrder,
-    SortField? sortField,
   }) {
     return FavoritesLoaded(
       favorites: favorites ?? this.favorites,
-      sortOrder: sortOrder ?? this.sortOrder,
-      sortField: sortField ?? this.sortField,
     );
   }
 
@@ -53,7 +41,7 @@ class FavoritesLoaded extends FavoritesState {
   Map<String, dynamic> toJson() => _$FavoritesLoadedToJson(this);
 
   @override
-  List<Object?> get props => [favorites, sortOrder, sortField];
+  List<Object?> get props => [favorites];
 }
 
 class FavoritesError extends FavoritesState {

@@ -11,6 +11,7 @@ class CharacterCard extends StatelessWidget {
     required this.viewMode,
     required this.onTap,
     required this.onFavoriteToggle,
+    this.heroTagPrefix,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class CharacterCard extends StatelessWidget {
   final ViewMode viewMode;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
+  final String? heroTagPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class CharacterCard extends StatelessWidget {
             Expanded(
               flex: 3,
               child: Hero(
-                tag: 'character_${character.id}',
+                tag: '${heroTagPrefix ?? 'character'}_${character.id}',
                 child: CachedNetworkImage(
                   imageUrl: character.image,
                   fit: BoxFit.cover,
@@ -120,7 +122,7 @@ class CharacterCard extends StatelessWidget {
           child: Row(
             children: [
               Hero(
-                tag: 'character_${character.id}',
+                tag: '${heroTagPrefix ?? 'character'}_${character.id}',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CachedNetworkImage(

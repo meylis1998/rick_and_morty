@@ -15,21 +15,18 @@ CharacterResponse _$CharacterResponseFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$CharacterResponseToJson(CharacterResponse instance) =>
-    <String, dynamic>{
-      'info': instance.info,
-      'results': instance.results,
-    };
+    <String, dynamic>{'info': instance.info, 'results': instance.results};
 
 InfoModel _$InfoModelFromJson(Map<String, dynamic> json) => InfoModel(
-      count: (json['count'] as num).toInt(),
-      pages: (json['pages'] as num).toInt(),
-      next: json['next'] as String?,
-      prev: json['prev'] as String?,
-    );
+  count: (json['count'] as num).toInt(),
+  pages: (json['pages'] as num).toInt(),
+  next: json['next'] as String?,
+  prev: json['prev'] as String?,
+);
 
 Map<String, dynamic> _$InfoModelToJson(InfoModel instance) => <String, dynamic>{
-      'count': instance.count,
-      'pages': instance.pages,
-      'next': instance.next,
-      'prev': instance.prev,
-    };
+  'count': instance.count,
+  'pages': instance.pages,
+  'next': instance.next,
+  'prev': instance.prev,
+};

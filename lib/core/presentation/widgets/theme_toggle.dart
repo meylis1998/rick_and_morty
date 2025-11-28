@@ -1,84 +1,45 @@
+import 'package:animated_theme_switcher/animated_theme_switcher.dart';
 import 'package:flutter/material.dart';
-import 'package:rick_and_morty/main.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rick_and_morty/core/theme/app_theme.dart';
+import 'package:rick_and_morty/core/theme/theme_cubit.dart';
 
 class ThemeToggle extends StatelessWidget {
   const ThemeToggle({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appState = MyApp.of(context);
-    if (appState == null) return const SizedBox.shrink();
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return ThemeSwitcher(
+          builder: (context) {
+            return IconButton(
+              icon: Icon(
+                themeMode == ThemeMode.dark
+                    ? Icons.light_mode
+                    : Icons.dark_mode,
+              ),
+              tooltip: themeMode == ThemeMode.dark
+                  ? 'Switch to Light Mode'
+                  : 'Switch to Dark Mode',
+              onPressed: () {
+                final themeCubit = context.read<ThemeCubit>();
 
-    final currentTheme = appState.currentThemeMode;
+                final newTheme = themeCubit.state == ThemeMode.dark
+                    ? AppTheme.lightTheme()
+                    : AppTheme.darkTheme();
 
-    return PopupMenuButton<ThemeMode>(
-      icon: Icon(_getThemeIcon(currentTheme)),
-      tooltip: 'Change theme',
-      onSelected: appState.changeThemeMode,
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: ThemeMode.light,
-          child: Row(
-            children: [
-              Icon(
-                currentTheme == ThemeMode.light
-                    ? Icons.check
-                    : Icons.check_box_outline_blank,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.light_mode, size: 20),
-              const SizedBox(width: 8),
-              const Text('Light'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: ThemeMode.dark,
-          child: Row(
-            children: [
-              Icon(
-                currentTheme == ThemeMode.dark
-                    ? Icons.check
-                    : Icons.check_box_outline_blank,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.dark_mode, size: 20),
-              const SizedBox(width: 8),
-              const Text('Dark'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: ThemeMode.system,
-          child: Row(
-            children: [
-              Icon(
-                currentTheme == ThemeMode.system
-                    ? Icons.check
-                    : Icons.check_box_outline_blank,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.brightness_auto, size: 20),
-              const SizedBox(width: 8),
-              const Text('System'),
-            ],
-          ),
-        ),
-      ],
+                ThemeSwitcher.of(context).changeTheme(
+                  theme: newTheme,
+                  isReversed: themeCubit.state == ThemeMode.light,
+                );
+
+                themeCubit.toggleTheme();
+              },
+            );
+          },
+        );
+      },
     );
-  }
-
-  IconData _getThemeIcon(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return Icons.light_mode;
-      case ThemeMode.dark:
-        return Icons.dark_mode;
-      case ThemeMode.system:
-        return Icons.brightness_auto;
-    }
   }
 }

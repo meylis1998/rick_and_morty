@@ -15,6 +15,7 @@ class ViewModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<ViewMode>(
+      showSelectedIcon: false,
       segments: const [
         ButtonSegment<ViewMode>(
           value: ViewMode.grid,

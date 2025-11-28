@@ -13,8 +13,6 @@ class DioClient {
         },
       ),
     );
-
-    _setupInterceptors();
   }
 
   static const String baseUrl = 'https://rickandmortyapi.com/api';
@@ -22,16 +20,6 @@ class DioClient {
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   late final Dio _dio;
-
-  void _setupInterceptors() {
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        error: true,
-      ),
-    );
-  }
 
   Dio get dio => _dio;
 }
