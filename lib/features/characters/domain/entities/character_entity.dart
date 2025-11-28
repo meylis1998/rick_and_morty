@@ -1,5 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'character_entity.g.dart';
+
+@JsonSerializable()
 class CharacterEntity extends Equatable {
   const CharacterEntity({
     required this.id,
@@ -50,6 +54,11 @@ class CharacterEntity extends Equatable {
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
+
+  factory CharacterEntity.fromJson(Map<String, dynamic> json) =>
+      _$CharacterEntityFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CharacterEntityToJson(this);
 
   @override
   List<Object?> get props => [

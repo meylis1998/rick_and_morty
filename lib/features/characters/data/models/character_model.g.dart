@@ -6,16 +6,17 @@ part of 'character_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$CharacterModelImpl _$$CharacterModelImplFromJson(Map<String, dynamic> json) =>
-    _$CharacterModelImpl(
+CharacterModel _$CharacterModelFromJson(Map<String, dynamic> json) =>
+    CharacterModel(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       status: json['status'] as String,
       species: json['species'] as String,
       type: json['type'] as String,
       gender: json['gender'] as String,
-      origin: Origin.fromJson(json['origin'] as Map<String, dynamic>),
-      location: Location.fromJson(json['location'] as Map<String, dynamic>),
+      origin: OriginModel.fromJson(json['origin'] as Map<String, dynamic>),
+      location:
+          LocationModel.fromJson(json['location'] as Map<String, dynamic>),
       image: json['image'] as String,
       episode:
           (json['episode'] as List<dynamic>).map((e) => e as String).toList(),
@@ -23,8 +24,7 @@ _$CharacterModelImpl _$$CharacterModelImplFromJson(Map<String, dynamic> json) =>
       created: json['created'] as String,
     );
 
-Map<String, dynamic> _$$CharacterModelImplToJson(
-        _$CharacterModelImpl instance) =>
+Map<String, dynamic> _$CharacterModelToJson(CharacterModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
@@ -40,24 +40,24 @@ Map<String, dynamic> _$$CharacterModelImplToJson(
       'created': instance.created,
     };
 
-_$OriginImpl _$$OriginImplFromJson(Map<String, dynamic> json) => _$OriginImpl(
+OriginModel _$OriginModelFromJson(Map<String, dynamic> json) => OriginModel(
       name: json['name'] as String,
       url: json['url'] as String,
     );
 
-Map<String, dynamic> _$$OriginImplToJson(_$OriginImpl instance) =>
+Map<String, dynamic> _$OriginModelToJson(OriginModel instance) =>
     <String, dynamic>{
       'name': instance.name,
       'url': instance.url,
     };
 
-_$LocationImpl _$$LocationImplFromJson(Map<String, dynamic> json) =>
-    _$LocationImpl(
+LocationModel _$LocationModelFromJson(Map<String, dynamic> json) =>
+    LocationModel(
       name: json['name'] as String,
       url: json['url'] as String,
     );
 
-Map<String, dynamic> _$$LocationImplToJson(_$LocationImpl instance) =>
+Map<String, dynamic> _$LocationModelToJson(LocationModel instance) =>
     <String, dynamic>{
       'name': instance.name,
       'url': instance.url,

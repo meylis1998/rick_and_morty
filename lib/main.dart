@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rick_and_morty/core/di/injection.dart';
+import 'package:rick_and_morty/core/navigation/app_router.dart';
+import 'package:rick_and_morty/core/services/preferences_service.dart';
 import 'package:rick_and_morty/core/theme/app_theme.dart';
 import 'package:rick_and_morty/core/utils/constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rick_and_morty/features/characters/presentation/bloc/characters_bloc.dart';
+import 'package:rick_and_morty/features/favorites/presentation/bloc/favorites_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,57 +23,53 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  late PreferencesService _prefsService;
 
   @override
   void initState() {
     super.initState();
+    _prefsService = getIt<PreferencesService>();
     _loadThemeMode();
   }
 
-  Future<void> _loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeIndex = prefs.getInt(AppConstants.themeKey) ?? 0;
+  void _loadThemeMode() {
+    final themeMode = _prefsService.getThemeMode();
     setState(() {
-      _themeMode = ThemeMode.values[themeIndex];
-    });
-  }
-
-  Future<void> _toggleTheme() async {
-    final newMode = _themeMode == ThemeMode.light
-        ? ThemeMode.dark
-        : ThemeMode.light;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(AppConstants.themeKey, newMode.index);
-
-    setState(() {
-      _themeMode = newMode;
+      switch (themeMode) {
+        case 'light':
+          _themeMode = ThemeMode.light;
+        case 'dark':
+          _themeMode = ThemeMode.dark;
+        default:
+          _themeMode = ThemeMode.system;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
-      themeMode: _themeMode,
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppConstants.appName),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _themeMode == ThemeMode.light
-                    ? Icons.dark_mode
-                    : Icons.light_mode,
-              ),
-              onPressed: _toggleTheme,
-            ),
-          ],
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<PreferencesService>(
+          create: (context) => getIt<PreferencesService>(),
         ),
-        body: const Center(
-          child: Text('Rick & Morty App - Coming Soon!'),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => getIt<CharactersBloc>(),
+          ),
+          BlocProvider(
+            create: (context) => getIt<FavoritesBloc>(),
+          ),
+        ],
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: AppConstants.appName,
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
+          themeMode: _themeMode,
+          routerConfig: appRouter,
         ),
       ),
     );

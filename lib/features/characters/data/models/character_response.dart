@@ -1,28 +1,40 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:rick_and_morty/features/characters/data/models/character_model.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'character_model.dart';
 
-part 'character_response.freezed.dart';
 part 'character_response.g.dart';
 
-@freezed
-class CharacterResponse with _$CharacterResponse {
-  const factory CharacterResponse({
-    required Info info,
-    required List<CharacterModel> results,
-  }) = _CharacterResponse;
+@JsonSerializable()
+class CharacterResponse {
+  final InfoModel info;
+  final List<CharacterModel> results;
+
+  CharacterResponse({
+    required this.info,
+    required this.results,
+  });
 
   factory CharacterResponse.fromJson(Map<String, dynamic> json) =>
       _$CharacterResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CharacterResponseToJson(this);
 }
 
-@freezed
-class Info with _$Info {
-  const factory Info({
-    required int count,
-    required int pages,
-    String? next,
-    String? prev,
-  }) = _Info;
+@JsonSerializable()
+class InfoModel {
+  final int count;
+  final int pages;
+  final String? next;
+  final String? prev;
 
-  factory Info.fromJson(Map<String, dynamic> json) => _$InfoFromJson(json);
+  InfoModel({
+    required this.count,
+    required this.pages,
+    this.next,
+    this.prev,
+  });
+
+  factory InfoModel.fromJson(Map<String, dynamic> json) =>
+      _$InfoModelFromJson(json);
+
+  Map<String, dynamic> toJson() => _$InfoModelToJson(this);
 }

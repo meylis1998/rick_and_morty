@@ -41,13 +41,6 @@ class DioClient {
 
     _dio.interceptors.addAll([
       DioCacheInterceptor(options: cacheOptions),
-      LogInterceptor(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: false,
-        error: true,
-      ),
     ]);
   }
 

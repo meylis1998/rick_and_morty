@@ -1,46 +1,71 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:json_annotation/json_annotation.dart';
 
-part 'character_model.freezed.dart';
 part 'character_model.g.dart';
 
-@freezed
-class CharacterModel with _$CharacterModel {
-  const factory CharacterModel({
-    required int id,
-    required String name,
-    required String status,
-    required String species,
-    required String type,
-    required String gender,
-    required Origin origin,
-    required Location location,
-    required String image,
-    required List<String> episode,
-    required String url,
-    required String created,
-  }) = _CharacterModel;
+@JsonSerializable()
+class CharacterModel {
+  final int id;
+  final String name;
+  final String status;
+  final String species;
+  final String type;
+  final String gender;
+  final OriginModel origin;
+  final LocationModel location;
+  final String image;
+  final List<String> episode;
+  final String url;
+  final String created;
+
+  CharacterModel({
+    required this.id,
+    required this.name,
+    required this.status,
+    required this.species,
+    required this.type,
+    required this.gender,
+    required this.origin,
+    required this.location,
+    required this.image,
+    required this.episode,
+    required this.url,
+    required this.created,
+  });
 
   factory CharacterModel.fromJson(Map<String, dynamic> json) =>
       _$CharacterModelFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CharacterModelToJson(this);
 }
 
-@freezed
-class Origin with _$Origin {
-  const factory Origin({
-    required String name,
-    required String url,
-  }) = _Origin;
+@JsonSerializable()
+class OriginModel {
+  final String name;
+  final String url;
 
-  factory Origin.fromJson(Map<String, dynamic> json) => _$OriginFromJson(json);
+  OriginModel({
+    required this.name,
+    required this.url,
+  });
+
+  factory OriginModel.fromJson(Map<String, dynamic> json) =>
+      _$OriginModelFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OriginModelToJson(this);
 }
 
-@freezed
-class Location with _$Location {
-  const factory Location({
-    required String name,
-    required String url,
-  }) = _Location;
+@JsonSerializable()
+class LocationModel {
+  final String name;
+  final String url;
 
-  factory Location.fromJson(Map<String, dynamic> json) =>
-      _$LocationFromJson(json);
+  LocationModel({
+    required this.name,
+    required this.url,
+  });
+
+  factory LocationModel.fromJson(Map<String, dynamic> json) =>
+      _$LocationModelFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LocationModelToJson(this);
 }
